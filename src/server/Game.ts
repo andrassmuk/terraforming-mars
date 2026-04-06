@@ -36,7 +36,7 @@ import {RemoveColonyFromGame} from './deferredActions/RemoveColonyFromGame';
 import {GainResourcesDeferred} from './deferredActions/GainResourcesDeferred';
 import {SerializedGame} from './SerializedGame';
 import {SpaceBonus} from '../common/boards/SpaceBonus';
-import {TileType} from '../common/TileType';
+import {OCEAN_UPGRADE_TILES, TileType} from '../common/TileType';
 import {Turmoil} from './turmoil/Turmoil';
 import {RandomMAOptionType} from '../common/ma/RandomMAOptionType';
 import {AresHandler} from './ares/AresHandler';
@@ -1303,7 +1303,7 @@ export class Game implements IGame, Logger {
 
     if (space.tile !== undefined) {
       let allow = false;
-      if (tile.tileType === TileType.NEW_HOLLAND) {
+      if (OCEAN_UPGRADE_TILES.has(tile.tileType)) {
         allow = true;
       } else if (this.gameOptions.aresExtension) {
         allow = true;
