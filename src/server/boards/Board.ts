@@ -7,7 +7,7 @@ import {SerializedBoard, SerializedSpace} from './SerializedBoard';
 import {CardName} from '../../common/cards/CardName';
 import {AresHandler} from '../ares/AresHandler';
 import {Units} from '../../common/Units';
-import {hazardSeverity} from '../../common/AresTileType';
+import {HAZARD_STEPS, hazardSeverity} from '../../common/AresTileType';
 import {TR_SOURCES, TRSource} from '../../common/cards/TRSource';
 import {sum} from '../../common/utils/utils';
 
@@ -160,12 +160,15 @@ export abstract class Board {
       return costs;
     }
 
-    switch (hazardSeverity(space.tile?.tileType)) {
+    const severity = hazardSeverity(space.tile?.tileType);
+    switch (severity) {
     case 'mild':
       costs.megacredits += 8;
+      costs.tr.tr = (costs.tr.tr ?? 0) + HAZARD_STEPS[severity];
       break;
     case 'severe':
       costs.megacredits += 16;
+      costs.tr.tr = (costs.tr.tr ?? 0) + HAZARD_STEPS[severity];
       break;
     }
 
