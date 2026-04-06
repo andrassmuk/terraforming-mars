@@ -14,6 +14,7 @@ import {Philares} from '../../../src/server/cards/promo/Philares';
 import {EmptyBoard} from '../../testing/EmptyBoard';
 import {LandClaim} from '../../../src/server/cards/base/LandClaim';
 import {MiningGuild} from '../../../src/server/cards/corporation/MiningGuild';
+import {GeologicalExpedition} from '../../../src/server/cards/pathfinders/GeologicalExpedition';
 import {intersection} from '../../../src/common/utils/utils';
 
 describe('MarsNomads', () => {
@@ -269,6 +270,46 @@ describe('MarsNomads', () => {
       expect(game.nomadSpace).eq(space.id);
       expect(player.steel).eq(1);
       expect(player.production.steel).eq(0);
+    });
+  });
+
+  describe('Compatible with Geological Expedition', () => {
+    it('Move triggers Geological Expedition bonus', () => {
+      game.board = EmptyBoard.newInstance();
+      const geologicalExpedition = new GeologicalExpedition();
+      player.playedCards.push(geologicalExpedition);
+
+      const firstSpace = game.board.getSpaceOrThrow('05');
+      const space = game.board.getSpaceOrThrow('04');
+      game.nomadSpace = firstSpace.id;
+
+      space.bonus = [SpaceBonus.STEEL];
+      const selectSpace = cast(card.action(player), SelectSpace);
+      expect(selectSpace.spaces).contains(space);
+      selectSpace.cb(space);
+      runAllActions(game);
+
+      // Player gets 1 steel from placement bonus + 1 steel from Geological Expedition
+      expect(player.steel).eq(2);
+    });
+
+    it('Move to empty bonus space grants 1 steel from Geological Expedition', () => {
+      game.board = EmptyBoard.newInstance();
+      const geologicalExpedition = new GeologicalExpedition();
+      player.playedCards.push(geologicalExpedition);
+
+      const firstSpace = game.board.getSpaceOrThrow('05');
+      const space = game.board.getSpaceOrThrow('04');
+      game.nomadSpace = firstSpace.id;
+
+      space.bonus = [];
+      const selectSpace = cast(card.action(player), SelectSpace);
+      expect(selectSpace.spaces).contains(space);
+      selectSpace.cb(space);
+      runAllActions(game);
+
+      // No placement bonus, but Geological Expedition grants 1 steel for empty bonus spaces
+      expect(player.steel).eq(1);
     });
   });
 
