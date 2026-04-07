@@ -6,7 +6,7 @@ import {Game} from '../../../src/server/Game';
 import {IGame} from '../../../src/server/IGame';
 import {TestPlayer} from '../../TestPlayer';
 import {Tag} from '../../../src/common/cards/Tag';
-import {cast, runAllActions} from '../../TestingUtils';
+import {cast, formatMessage, runAllActions} from '../../TestingUtils';
 import {SelectCard} from '../../../src/server/inputs/SelectCard';
 import {testGame} from '../../TestGame';
 import {VenusianAnimals} from '../../../src/server/cards/venusNext/VenusianAnimals';
@@ -125,6 +125,46 @@ describe('Leavitt', () => {
     expect(player.tags.count(Tag.SCIENCE)).to.eq(0);
     leavitt.addColony(player);
     expect(player.tags.count(Tag.SCIENCE)).to.eq(1);
+  });
+
+  it('Trade reveals cards publicly in game log', () => {
+    leavitt.trackPosition = 2;
+    leavitt.trade(player);
+    game.gameLog = [];
+    runAllActions(game);
+
+    const selectCard = cast(player.popWaitingFor(), SelectCard);
+    expect(selectCard.cards).has.length(3);
+
+    selectCard.cb([selectCard.cards[0]]);
+
+    // Check that the drawn/revealed cards are logged publicly (not just privately)
+    const publicLogs = game.gameLog.filter((entry) => entry.playerId === undefined);
+    const revealLog = publicLogs.find((entry) => formatMessage(entry).includes('drew'));
+    expect(revealLog).is.not.undefined;
+  });
+
+  it('Colony bonus reveals card publicly even when not bought', () => {
+    leavitt.addColony(player);
+    leavitt.trackPosition = 1;
+    player.megaCredits = 0; // Can't afford to buy
+    leavitt.trade(player);
+    runAllActions(game);
+
+    // Trader selects card
+    const traderSelect = cast(player.popWaitingFor(), SelectCard);
+    traderSelect.cb([traderSelect.cards[0]]);
+    runAllActions(game);
+
+    // Colony bonus: player sees 1 card but can't buy (0 MC)
+    const colonySelect = cast(player.popWaitingFor(), SelectCard);
+    expect(colonySelect.config.max).eq(0);
+    colonySelect.cb([]); // Don't buy
+
+    // The revealed card should still be in the public log
+    const revealLogs = game.gameLog.filter((entry) =>
+      entry.playerId === undefined && formatMessage(entry).includes('drew'));
+    expect(revealLogs.length).is.greaterThan(0);
   });
 
   // #6349
