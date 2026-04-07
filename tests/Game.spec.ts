@@ -582,6 +582,19 @@ describe('Game', () => {
     expect(space.player).is.undefined;
   });
 
+  it('Ocean upgrade tiles can be placed on ocean spaces without Ares or Pathfinders', () => {
+    const player = TestPlayer.BLUE.newPlayer();
+    const game = Game.newInstance('game-ocean-upgrade', [player], player);
+    const oceanSpace = addOcean(player);
+
+    // Placing an ocean city tile on top of an existing ocean should not throw,
+    // even without Ares or Pathfinders expansion enabled.
+    expect(() => {
+      game.addTile(player, oceanSpace, {tileType: TileType.OCEAN_CITY});
+    }).to.not.throw();
+    expect(oceanSpace.tile!.tileType).to.eq(TileType.OCEAN_CITY);
+  });
+
   it('Check Ecologist Milestone', () => {
     const player = TestPlayer.BLUE.newPlayer();
 
