@@ -7,7 +7,7 @@ import {Thermalist} from '../src/server/awards/Thermalist';
 import {Birds} from '../src/server/cards/base/Birds';
 import {WaterImportFromEuropa} from '../src/server/cards/base/WaterImportFromEuropa';
 import {Phase} from '../src/common/Phase';
-import {addCity, addGreenery, addOcean, forceGenerationEnd, maxOutOceans, runAllActions, setOxygenLevel, setTemperature, setVenusScaleLevel} from './TestingUtils';
+import {addCity, addGreenery, addOcean, formatMessage, forceGenerationEnd, maxOutOceans, runAllActions, setOxygenLevel, setTemperature, setVenusScaleLevel} from './TestingUtils';
 import {cast, toName} from '../src/common/utils/utils';
 import {TestPlayer} from './TestPlayer';
 import {SaturnSystems} from '../src/server/cards/corporation/SaturnSystems';
@@ -580,6 +580,85 @@ describe('Game', () => {
 
     const space: Space = game.board.getSpaceOrThrow(spaceId);
     expect(space.player).is.undefined;
+  });
+
+  it('Logs ocean adjacency bonus when placing a tile next to oceans', () => {
+    const player = TestPlayer.BLUE.newPlayer();
+    const game = Game.newInstance('game-ocean-log', [player], player);
+
+    // Place an ocean tile
+    const oceanSpace = addOcean(player);
+
+    // Find a land space adjacent to the ocean
+    const adjacentLandSpaces = game.board.getAdjacentSpaces(oceanSpace)
+      .filter((s) => s.spaceType === 'land' && s.tile === undefined);
+    expect(adjacentLandSpaces).is.not.empty;
+
+    const startingMC = player.megaCredits;
+    game.gameLog = [];
+
+    // Place a greenery next to the ocean
+    addGreenery(player, adjacentLandSpaces[0].id);
+
+    const oceanBonusLog = game.gameLog.find((entry) =>
+      formatMessage(entry).includes('ocean'));
+    expect(oceanBonusLog).is.not.undefined;
+    expect(formatMessage(oceanBonusLog!)).to.include('gained 2 M€');
+    expect(formatMessage(oceanBonusLog!)).to.include('1 ocean');
+    expect(player.megaCredits).to.eq(startingMC + 2);
+  });
+
+  it('Logs correct amount for multiple adjacent oceans', () => {
+    const player = TestPlayer.BLUE.newPlayer();
+    const game = Game.newInstance('game-ocean-log-2', [player], player);
+
+    // Place two ocean tiles that share an adjacent land space
+    const ocean1 = addOcean(player);
+    const adjacentToOcean1 = game.board.getAdjacentSpaces(ocean1);
+    const oceanSpaces = game.board.getAvailableSpacesForOcean(player);
+
+    // Find an ocean space adjacent to the first ocean
+    const ocean2Space = oceanSpaces.find((s) => adjacentToOcean1.some((adj) => adj.id === s.id));
+    if (ocean2Space === undefined) {
+      // If no adjacent ocean space, skip this test variation
+      return;
+    }
+    addOcean(player, ocean2Space.id);
+
+    // Find a land space adjacent to both oceans
+    const adjToOcean2 = game.board.getAdjacentSpaces(ocean2Space);
+    const sharedAdjacentLand = adjacentToOcean1.filter((s) =>
+      s.spaceType === 'land' && s.tile === undefined && adjToOcean2.some((a) => a.id === s.id));
+
+    if (sharedAdjacentLand.length === 0) {
+      return;
+    }
+
+    const startingMC = player.megaCredits;
+    game.gameLog = [];
+
+    addGreenery(player, sharedAdjacentLand[0].id);
+
+    const oceanBonusLog = game.gameLog.find((entry) =>
+      formatMessage(entry).includes('ocean'));
+    expect(oceanBonusLog).is.not.undefined;
+    expect(formatMessage(oceanBonusLog!)).to.include('gained 4 M€');
+    expect(formatMessage(oceanBonusLog!)).to.include('2 ocean');
+    expect(player.megaCredits).to.eq(startingMC + 4);
+  });
+
+  it('Does not log ocean bonus when no adjacent oceans', () => {
+    const player = TestPlayer.BLUE.newPlayer();
+    const game = Game.newInstance('game-ocean-log-3', [player], player);
+
+    game.gameLog = [];
+
+    // Place a greenery with no adjacent oceans
+    addGreenery(player);
+
+    const oceanBonusLog = game.gameLog.find((entry) =>
+      formatMessage(entry).includes('ocean(s) next to'));
+    expect(oceanBonusLog).is.undefined;
   });
 
   it('Check Ecologist Milestone', () => {

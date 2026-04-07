@@ -1385,11 +1385,12 @@ export class Game implements IGame, Logger {
       this.grantSpaceBonuses(player, space);
     }
 
-    this.board.getAdjacentSpaces(space).forEach((adjacentSpace) => {
-      if (Board.isOceanSpace(adjacentSpace)) {
-        player.megaCredits += player.oceanBonus;
-      }
-    });
+    const adjacentOceans = this.board.getAdjacentSpaces(space).filter((adj) => Board.isOceanSpace(adj)).length;
+    if (adjacentOceans > 0) {
+      const bonus = adjacentOceans * player.oceanBonus;
+      player.megaCredits += bonus;
+      this.log('${0} gained ${1} M€ for ${2} ocean(s) next to placed tile', (b) => b.player(player).number(bonus).number(adjacentOceans));
+    }
 
     // TODO(kberg): these might not apply for some bonuses, e.g. Frontier Town.
     // https://boardgamegeek.com/thread/3344366/article/44658730#44658730
