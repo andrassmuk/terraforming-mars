@@ -959,6 +959,35 @@ describe('drafting', () => {
     });
   });
 
+  it('prelude draft does not expose other players picks via shared reference', () => {
+    const [/* game */, player, otherPlayer] = testGame(2, {
+      skipInitialShuffling: true,
+      draftVariant: true,
+      initialDraftVariant: true,
+      preludeExtension: true,
+      preludeDraftVariant: true,
+    });
+
+    runInitialProjectDraft(player, otherPlayer);
+
+    // At start of prelude draft, each player sees their 4 dealt preludes
+    const playerPreludes = draftSelection(player);
+    const otherPreludes = draftSelection(otherPlayer);
+
+    expect(playerPreludes).has.length(4);
+    expect(otherPreludes).has.length(4);
+
+    // Players' selections should not overlap - they have different dealt cards
+    expect(playerPreludes).to.not.deep.eq(otherPreludes);
+
+    // After player picks a prelude, the other player's available cards should NOT change
+    const otherPreludesBefore = [...draftSelection(otherPlayer)];
+    selectCard(player, playerPreludes[0]);
+
+    // Other player's dealt preludes must still be the same
+    expect(draftSelection(otherPlayer)).deep.eq(otherPreludesBefore);
+  });
+
   // Every initial draft includes project cards first.
   // That shouldn't really be mandatory. Let's fix that.
   // TODO(kberg): Allow prelude draft without project card draft.
