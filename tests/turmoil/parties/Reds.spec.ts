@@ -7,6 +7,8 @@ import {MoonExpansion} from '../../../src/server/moon/MoonExpansion';
 import {OrOptions} from '../../../src/server/inputs/OrOptions';
 import {testGame} from '../../TestGame';
 import {PartyName} from '../../../src/common/turmoil/PartyName';
+import {TileType} from '../../../src/common/TileType';
+import {AresHazards} from '../../../src/server/ares/AresHazards';
 
 describe('Reds', () => {
   let player: TestPlayer;
@@ -118,5 +120,22 @@ describe('Reds', () => {
 
     game.increaseOxygenLevel(player, 1);
     expect(player.production.megacredits).to.eq(-1);
+  });
+
+  it('Reds account for TR cost when covering Ares hazard tiles', () => {
+    [game, player, secondPlayer] = testGame(2, {turmoilExtension: true, aresExtension: true});
+    setRulingParty(game, PartyName.REDS, 'rp01');
+
+    // Place a mild hazard on a land space
+    const space = game.board.getAvailableSpacesOnLand(player)[0];
+    AresHazards.putHazardAt(game, space, TileType.EROSION_MILD);
+
+    // Covering a mild hazard costs 8 MC + raises TR by 1 step.
+    // With Reds in power, TR raise costs 3 MC per step, so total = 11 MC.
+    player.megaCredits = 10;
+    expect(game.board.canAfford(player, space)).is.false;
+
+    player.megaCredits = 11;
+    expect(game.board.canAfford(player, space)).is.true;
   });
 });
