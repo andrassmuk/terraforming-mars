@@ -31,6 +31,22 @@ describe('MiningMarketInsider', () => {
     expect(card.resourceCount).eq(2);
   });
 
+  it('does not trigger when identifying a space with nothing', () => {
+    const card = new MiningMarketInsider();
+    const [game, player] = testGame(2, {underworldExpansion: true});
+
+    player.playedCards.push(card);
+
+    // Find a space and set its underground resource to 'nothing'
+    const spaces = UnderworldExpansion.identifiableSpaces(player);
+    const space = spaces[0];
+    space.undergroundResources = 'nothing';
+
+    UnderworldExpansion.identify(game, space, player);
+
+    expect(card.resourceCount).eq(0);
+  });
+
   it('canAct', () => {
     const card = new MiningMarketInsider();
     const [/* game */, player] = testGame(1, {underworldExpansion: true});
