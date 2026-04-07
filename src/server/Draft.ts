@@ -255,7 +255,7 @@ class PreludeDraft extends Draft {
   }
 
   override draw(player: IPlayer) {
-    return player.dealtPreludeCards;
+    return [...player.dealtPreludeCards];
   }
 
   override cardsToKeep(_player: IPlayer): number {
@@ -288,7 +288,7 @@ class CEOsDraft extends Draft {
   }
 
   override draw(player: IPlayer) {
-    return player.dealtCeoCards;
+    return [...player.dealtCeoCards];
   }
 
   override cardsToKeep(_player: IPlayer): number {
